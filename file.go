@@ -5,25 +5,17 @@ import (
 	"io"
 	"log"
 	"os"
-	"path/filepath"
 	"strings"
 	"sync/atomic"
 )
 
-// File Содержит путь до файла и текущее суммарное кол-во слов "Go"
+// File Структура для работы с файлом
 type File struct {
-	Path  string
-	Total *uint64
 }
 
 // Check Проверяет файл на существование
-func (r *File) Check() bool {
-	absolutePath, err := filepath.Abs(r.Path)
-	if err != nil {
-		return false
-	}
-
-	fileInfo, err := os.Stat(absolutePath)
+func (r *File) Check(path string) bool {
+	fileInfo, err := os.Stat(path)
 	if err != nil {
 		return false
 	}
@@ -32,14 +24,12 @@ func (r *File) Check() bool {
 		return false
 	}
 
-	r.Path = absolutePath
-
 	return true
 }
 
 // Read Читает файл и считает кол-во слов "Go"
-func (r *File) Read() (count uint64, err error) {
-	file, err := os.Open(r.Path)
+func (r *File) Read(path string, total *uint64) (count uint64, err error) {
+	file, err := os.Open(path)
 	if err != nil {
 		return 0, fmt.Errorf("Ошибка при открытии файла: %w\n", err)
 	}
@@ -57,7 +47,7 @@ func (r *File) Read() (count uint64, err error) {
 	}
 
 	count = uint64(strings.Count(string(body), "Go"))
-	atomic.AddUint64(r.Total, count)
+	atomic.AddUint64(total, count)
 
 	return count, nil
 }

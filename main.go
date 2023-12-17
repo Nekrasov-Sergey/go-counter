@@ -34,31 +34,22 @@ func main() {
 		wg.Add(1)
 		go func(path string) {
 			defer func() {
-				wg.Done()
 				<-maxRequests
+				wg.Done()
 			}()
 
 			if len(path) == 0 {
 				return
 			}
 
-			url := &URL{
-				Path:  path,
-				Total: &total,
-			}
-
-			file := &File{
-				Path:  path[1:],
-				Total: &total,
-			}
-
-			var objects []ReaderChecker
-			objects = append(objects, url, file)
+			url := &URL{}
+			file := &File{}
+			objects := []ReaderChecker{url, file}
 
 			var readerChecker ReaderChecker
 
 			for _, object := range objects {
-				if object.Check() {
+				if object.Check(path) {
 					readerChecker = object
 					break
 				}
@@ -68,7 +59,7 @@ func main() {
 				return
 			}
 
-			count, err := readerChecker.Read()
+			count, err := readerChecker.Read(path, &total)
 			if err != nil {
 				log.Print(err)
 				return

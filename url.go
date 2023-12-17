@@ -9,24 +9,13 @@ import (
 	"sync/atomic"
 )
 
-// URL Содержит путь до сайта и текущее суммарное кол-во слов "Go"
+// URL Структура для работы с сайтом
 type URL struct {
-	Path  string
-	Total *uint64
 }
 
 // Check Проверяет сайт на существование
-func (r *URL) Check() bool {
-	if !strings.HasPrefix(r.Path, "http") {
-		return false
-	}
-
-	head, err := http.Head(r.Path)
-	if err != nil {
-		return false
-	}
-
-	if head.StatusCode != http.StatusOK {
+func (r *URL) Check(path string) bool {
+	if !strings.HasPrefix(path, "http") {
 		return false
 	}
 
@@ -34,8 +23,8 @@ func (r *URL) Check() bool {
 }
 
 // Read Читает тело ответа сайта и считает кол-во слов "Go"
-func (r *URL) Read() (count uint64, err error) {
-	response, err := http.Get(r.Path)
+func (r *URL) Read(path string, total *uint64) (count uint64, err error) {
+	response, err := http.Get(path)
 	if err != nil {
 		return 0, fmt.Errorf("Ошибка при выполнении запроса: %w\n", err)
 	}
@@ -53,7 +42,7 @@ func (r *URL) Read() (count uint64, err error) {
 	}
 
 	count = uint64(strings.Count(string(body), "Go"))
-	atomic.AddUint64(r.Total, count)
+	atomic.AddUint64(total, count)
 
 	return count, nil
 }
