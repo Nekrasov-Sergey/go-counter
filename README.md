@@ -4,6 +4,12 @@
 * go build -o go-counter
 * echo -e 'https://golang.org\n/etc/passwd\nhttps://golang.org\nhttps://golang.org' | ./go-counter
 
+## Вывод
+Count for /etc/passwd: 0\
+Count for https://golang.org: 246\
+Count for https://golang.org: 246\
+Count for https://golang.org: 246
+
 ## Задание
 Процессу на stdin приходят строки, содержащие URL или названия файлов. Каждый такой URL нужно запросить,
 каждый файл нужно прочитать, и посчитать кол-во вхождений строки "Go" в ответе.
