@@ -4,10 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"log"
-	"net/http"
 	"os"
-	"path/filepath"
-	"strings"
 	"sync"
 )
 
@@ -45,30 +42,33 @@ func main() {
 				return
 			}
 
-			var (
-				count uint64
-				err   error
-			)
+			url := &URL{
+				Path:  path,
+				Total: &total,
+			}
 
-			var reader Reader
+			file := &File{
+				Path:  path[1:],
+				Total: &total,
+			}
 
-			switch {
-			case CheckURL(path):
-				reader = &URLReader{
-					Path:  path,
-					Total: &total,
+			var objects []ReaderChecker
+			objects = append(objects, url, file)
+
+			var readerChecker ReaderChecker
+
+			for _, object := range objects {
+				if object.Check() {
+					readerChecker = object
+					break
 				}
-			case CheckFile(path[1:]):
-				reader = &FileReader{
-					Path:  path[1:],
-					Total: &total,
-				}
-			default:
+			}
+			if readerChecker == nil {
 				log.Printf("Неверный путь %s", path)
 				return
 			}
 
-			count, err = reader.ReadData()
+			count, err := readerChecker.Read()
 			if err != nil {
 				log.Print(err)
 				return
@@ -80,41 +80,4 @@ func main() {
 
 	wg.Wait()
 	fmt.Printf("Total: %d\n", total)
-}
-
-// CheckURL Проверяет сайт на существование
-func CheckURL(path string) bool {
-	if !strings.HasPrefix(path, "http") {
-		return false
-	}
-
-	head, err := http.Head(path)
-	if err != nil {
-		return false
-	}
-
-	if head.StatusCode != http.StatusOK {
-		return false
-	}
-
-	return true
-}
-
-// CheckFile Проверяет файл на существование
-func CheckFile(path string) bool {
-	absolutePath, err := filepath.Abs(path)
-	if err != nil {
-		return false
-	}
-
-	fileInfo, err := os.Stat(absolutePath)
-	if err != nil {
-		return false
-	}
-
-	if fileInfo.Size() == 0 || fileInfo.IsDir() {
-		return false
-	}
-
-	return true
 }

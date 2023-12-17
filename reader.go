@@ -11,26 +11,45 @@ import (
 	"sync/atomic"
 )
 
-// Reader Реализующие этот интерфейс типы должны содержать метод ReadData, который выполняет
-// чтение данных и возвращает количество слов "Go" и ошибку.
-type Reader interface {
-	ReadData() (count uint64, err error)
+// ReaderChecker Реализующие этот интерфейс типы должны содержать методы Check и Read. Check проверяет путь
+// на существование, а Read выполняет чтение данных и возвращает количество слов "Go" и ошибку.
+type ReaderChecker interface {
+	Check() bool
+	Read() (count uint64, err error)
 }
 
-// URLReader Содержит путь до сайта и текущее суммарное кол-во слов "Go"
-type URLReader struct {
+// URL Содержит путь до сайта и текущее суммарное кол-во слов "Go"
+type URL struct {
 	Path  string
 	Total *uint64
 }
 
-// FileReader Содержит путь до файла и текущее суммарное кол-во слов "Go"
-type FileReader struct {
+// File Содержит путь до файла и текущее суммарное кол-во слов "Go"
+type File struct {
 	Path  string
 	Total *uint64
 }
 
-// ReadData Читает тело ответа сайта и считает кол-во слов "Go"
-func (r *URLReader) ReadData() (count uint64, err error) {
+// Check Проверяет сайт на существование
+func (r *URL) Check() bool {
+	if !strings.HasPrefix(r.Path, "http") {
+		return false
+	}
+
+	head, err := http.Head(r.Path)
+	if err != nil {
+		return false
+	}
+
+	if head.StatusCode != http.StatusOK {
+		return false
+	}
+
+	return true
+}
+
+// Read Читает тело ответа сайта и считает кол-во слов "Go"
+func (r *URL) Read() (count uint64, err error) {
 	response, err := http.Get(r.Path)
 	if err != nil {
 		return 0, fmt.Errorf("Ошибка при выполнении запроса: %w\n", err)
@@ -54,14 +73,30 @@ func (r *URLReader) ReadData() (count uint64, err error) {
 	return count, nil
 }
 
-// ReadData Читает файл и считает кол-во слов "Go"
-func (r *FileReader) ReadData() (count uint64, err error) {
+// Check Проверяет файл на существование
+func (r *File) Check() bool {
 	absolutePath, err := filepath.Abs(r.Path)
 	if err != nil {
-		return 0, fmt.Errorf("Ошибка при получении абсолютного пути: %w\n", err)
+		return false
 	}
 
-	file, err := os.Open(absolutePath)
+	fileInfo, err := os.Stat(absolutePath)
+	if err != nil {
+		return false
+	}
+
+	if fileInfo.Size() == 0 || fileInfo.IsDir() {
+		return false
+	}
+
+	r.Path = absolutePath
+
+	return true
+}
+
+// Read Читает файл и считает кол-во слов "Go"
+func (r *File) Read() (count uint64, err error) {
+	file, err := os.Open(r.Path)
 	if err != nil {
 		return 0, fmt.Errorf("Ошибка при открытии файла: %w\n", err)
 	}
