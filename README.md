@@ -1,7 +1,7 @@
 # Тестовое задание "go-counter"
 
 ## Для запуска прописать команды из директории проекта
-* go build go-counter.go
+* go build -o go-counter
 * echo -e 'https://golang.org\n/etc/passwd\nhttps://golang.org\nhttps://golang.org' | ./go-counter
 
 ## Задание
